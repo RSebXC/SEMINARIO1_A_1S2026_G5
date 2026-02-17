@@ -1,0 +1,13 @@
+.auth-box--wide {
+  max-width: 480px;
+}
+
+.register-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 520px) {
+  .register-row { grid-template-columns: 1fr; }
+}
