@@ -1,9 +1,9 @@
 export const MOCK_USER = {
   id: 1,
-  nombre: "Carlos Mendez",
-  email: "carlos@cloudcinema.gt",
+  nombre: "Rodrigo Castro",
+  email: "castro@cloudcinema.gt",
   foto_perfil:
-    "https://api.dicebear.com/7.x/lorelei/svg?seed=Carlos&backgroundColor=b6e3f4",
+    "https://api.dicebear.com/7.x/lorelei/svg?seed=Rodrigo&backgroundColor=b6e3f4",
 };
 
 export const MOCK_MOVIES = [

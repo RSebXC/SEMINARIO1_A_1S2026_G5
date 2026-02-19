@@ -22,19 +22,21 @@ export default function Login() {
 
     // Simula llamada al backend
     setTimeout(() => {
-      if (
-        form.email    === "carlos@cloudcinema.gt" &&
-        form.password === "1234"
-      ) {
-        login(MOCK_USER);
-        navigate("/gallery");
-      } else {
-        setError(
-          "Credenciales incorrectas. Prueba:\n carlos@cloudcinema.gt / 1234"
-        );
-        setLoading(false);
-      }
-    }, 900);
+  if (
+    (form.email === "rodrigo@cloudcinema.gt" && form.password === "1234") ||
+    (form.email === "sergio@cloudcinema.gt" && form.password === "1234") ||
+    (form.email === "moises@cloudcinema.gt" && form.password === "1234")
+  ) {
+    login(MOCK_USER);
+    navigate("/gallery");
+  } else {
+    setError(
+      "Credenciales incorrectas. Prueba:\n rodrigo@cloudcinema.gt / 1234"
+    );
+    setLoading(false);
+  }
+}, 900);
+
   };
 
   return (
