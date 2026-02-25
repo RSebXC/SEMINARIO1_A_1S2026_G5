@@ -1,20 +1,25 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
+import { register as registerService } from "../../services/api";
 import "../Login/Login.css";   // comparte estilos auth
 import "./Register.css";
 
 export default function Register() {
   const { login } = useApp();
-  const navigate   = useNavigate();
+  const navigate  = useNavigate();
 
   const [form, setForm] = useState({
     nombre: "", email: "", password: "", confirm: "",
   });
-  const [avatar, setAvatar]   = useState(
+
+  // Guardamos tanto la URL de preview como el File real para enviarlo al backend
+  const [avatarPreview, setAvatarPreview] = useState(
     "https://api.dicebear.com/7.x/lorelei/svg?seed=nuevo&backgroundColor=b6e3f4"
   );
-  const [error, setError]     = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+
+  const [error,   setError]   = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
@@ -23,15 +28,21 @@ export default function Register() {
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Guardar el File real para enviarlo como multipart
+    setAvatarFile(file);
+
+    // Generar preview local
     const reader = new FileReader();
-    reader.onloadend = () => setAvatar(reader.result);
+    reader.onloadend = () => setAvatarPreview(reader.result);
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();   // ← Evitar recarga de página
     setError("");
 
+    // Validaciones locales
     if (form.password !== form.confirm) {
       setError("Las contraseñas no coinciden");
       return;
@@ -40,17 +51,41 @@ export default function Register() {
       setError("La contraseña debe tener al menos 4 caracteres");
       return;
     }
+    if (!form.nombre.trim()) {
+      setError("El nombre completo es obligatorio");
+      return;
+    }
 
     setLoading(true);
-    setTimeout(() => {
-      login({
-        id: Date.now(),
-        nombre: form.nombre,
-        email: form.email,
-        foto_perfil: avatar,
+
+    try {
+      // Llamada real al backend
+      const data = await registerService({
+        nombre_completo: form.nombre,
+        email:           form.email,
+        password:        form.password,
+        confirm_password: form.confirm, 
+        foto_perfil:     avatarFile,   // File real (puede ser null si no subió foto)
       });
+
+      // El backend devuelve el usuario creado; lo guardamos en contexto
+      login({
+        id:          data.id      ?? data.id_usuario ?? Date.now(),
+        nombre:      data.nombre  ?? data.nombre_completo ?? form.nombre,
+        email:       data.email   ?? form.email,
+        foto_perfil: data.foto_perfil ?? avatarPreview,
+      });
+
       navigate("/gallery");
-    }, 1000);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error   ||
+        "Error al crear la cuenta. Intenta de nuevo.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -82,7 +117,7 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="auth-form" noValidate>
             {/* Avatar */}
             <div className="avatar-upload-row">
-              <img src={avatar} alt="preview" className="avatar-preview" />
+              <img src={avatarPreview} alt="preview" className="avatar-preview" />
               <label className="btn-upload">
                 📷 Subir foto de perfil
                 <input

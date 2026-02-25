@@ -1,67 +1,120 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "../../context/AppContext";
-import { MOCK_MOVIES } from "../../data/mockData";
+import { getMovies } from "../../services/api";
 import MovieCard from "../../components/MovieCard/MovieCard";
 import "./Gallery.css";
 
-const GENRES = ["Todos", "Acción", "Sci-Fi", "Drama", "Thriller"];
-const FEATURED = MOCK_MOVIES[0]; // Dune II como destacada
-
 export default function Gallery() {
   const { inPlaylist, addToPlaylist, showToast } = useApp();
-  const [filter, setFilter] = useState("Todos");
+
+  const [movies,  setMovies]  = useState([]);
+  const [filter,  setFilter]  = useState("Todos");
+  const [genres,  setGenres]  = useState(["Todos"]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState("");
+
+  // Cargar películas desde el backend al montar
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const data = await getMovies();
+        setMovies(data);
+
+        // Generar lista de géneros dinámica desde los datos reales
+        const uniqueGenres = ["Todos", ...new Set(data.map((m) => m.genero).filter(Boolean))];
+        setGenres(uniqueGenres);
+      } catch (err) {
+        setError("No se pudieron cargar las películas. Intenta de nuevo.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMovies();
+  }, []);
+
+  const featured = movies[0] ?? null;
 
   const filtered =
     filter === "Todos"
-      ? MOCK_MOVIES
-      : MOCK_MOVIES.filter((m) => m.genero === filter);
+      ? movies
+      : movies.filter((m) => m.genero === filter);
 
   const handleHeroAdd = () => {
-    if (inPlaylist(FEATURED.id_pelicula)) {
+    if (!featured) return;
+    if (inPlaylist(featured.id_pelicula)) {
       showToast("Ya está en tu lista 📋", "ℹ️");
       return;
     }
-    addToPlaylist(FEATURED);
-    showToast(`"${FEATURED.titulo}" añadida a tu lista ✓`);
+    addToPlaylist(featured);
+    showToast(`"${featured.titulo}" añadida a tu lista ✓`);
   };
 
   const handleHeroPlay = () => {
-    window.open(FEATURED.url_contenido, "_blank");
+    if (featured?.url_contenido) {
+      window.open(featured.url_contenido, "_blank");
+    }
   };
+
+  // ── Estados de carga y error ──
+  if (loading) {
+    return (
+      <main className="gallery-page">
+        <div className="gallery-loading">
+          <div className="spinner" />
+          <p>Cargando catálogo...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="gallery-page">
+        <div className="gallery-error">
+          <span>⚠️</span>
+          <p>{error}</p>
+          <button className="btn-outline" onClick={() => window.location.reload()}>
+            Reintentar
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="gallery-page">
       {/* ── HERO ── */}
-      <section className="hero">
-        <div className="hero-bg" />
-        <div className="hero-gradient" />
+      {featured && (
+        <section className="hero">
+          <div className="hero-bg" />
+          <div className="hero-gradient" />
 
-        <div className="hero-content">
-          <span className="hero-eyebrow">⭐ Película Destacada</span>
-          <h1 className="hero-title">{FEATURED.titulo}</h1>
+          <div className="hero-content">
+            <span className="hero-eyebrow">⭐ Película Destacada</span>
+            <h1 className="hero-title">{featured.titulo}</h1>
 
-          <div className="hero-meta">
-            <span>🎬 {FEATURED.director}</span>
-            <span>📅 {FEATURED.anio_estreno}</span>
-            <span>🎭 {FEATURED.genero}</span>
+            <div className="hero-meta">
+              <span>🎬 {featured.director}</span>
+              <span>📅 {featured.anio_estreno}</span>
+              <span>🎭 {featured.genero}</span>
+            </div>
+
+            {featured.descripcion && (
+              <p className="hero-desc">{featured.descripcion}</p>
+            )}
+
+            <div className="hero-actions">
+              <button className="btn-hero btn-hero-primary" onClick={handleHeroPlay}>
+                ▶ &nbsp;Ver tráiler
+              </button>
+              <button className="btn-hero btn-hero-secondary" onClick={handleHeroAdd}>
+                {inPlaylist(featured.id_pelicula) ? "✓ En mi lista" : "+ Mi lista"}
+              </button>
+            </div>
           </div>
-
-          <p className="hero-desc">
-            La esperada segunda parte de la épica saga de Arrakis. Paul
-            Atreides se une a los Fremen en una guerra de venganza que
-            sacudirá el universo conocido.
-          </p>
-
-          <div className="hero-actions">
-            <button className="btn-hero btn-hero-primary" onClick={handleHeroPlay}>
-              ▶ &nbsp;Ver tráiler
-            </button>
-            <button className="btn-hero btn-hero-secondary" onClick={handleHeroAdd}>
-              {inPlaylist(FEATURED.id_pelicula) ? "✓ En mi lista" : "+ Mi lista"}
-            </button>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── CATÁLOGO ── */}
       <section className="catalog container">
@@ -70,9 +123,9 @@ export default function Gallery() {
           <span className="catalog-count">{filtered.length} títulos</span>
         </div>
 
-        {/* Filtros */}
+        {/* Filtros dinámicos */}
         <div className="filter-bar">
-          {GENRES.map((g) => (
+          {genres.map((g) => (
             <button
               key={g}
               className={`filter-chip ${filter === g ? "active" : ""}`}
@@ -84,11 +137,17 @@ export default function Gallery() {
         </div>
 
         {/* Grid */}
-        <div className="movies-grid">
-          {filtered.map((movie) => (
-            <MovieCard key={movie.id_pelicula} movie={movie} mode="gallery" />
-          ))}
-        </div>
+        {filtered.length === 0 ? (
+          <div className="gallery-empty">
+            <p>No hay películas en esta categoría.</p>
+          </div>
+        ) : (
+          <div className="movies-grid">
+            {filtered.map((movie) => (
+              <MovieCard key={movie.id_pelicula} movie={movie} mode="gallery" />
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

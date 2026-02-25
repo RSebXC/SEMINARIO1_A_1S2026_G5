@@ -1,5 +1,4 @@
 const { Upload } = require("@aws-sdk/lib-storage");
-const { PutObjectCommand } = require("@aws-sdk/client-s3");
 const { v4: uuid } = require("uuid");
 const s3 = require("../config/s3");
 const env = require("../config/env");

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useApp } from "../../context/AppContext";
-import { MOCK_MOVIES } from "../../data/mockData";
+import { updateProfile } from "../../services/api";
 import "./Profile.css";
 
 export default function Profile() {
@@ -11,10 +11,12 @@ export default function Profile() {
     passwordAct: "",
     passwordNew: "",
   });
-  const [avatar,   setAvatar]   = useState(user.foto_perfil);
-  const [editing,  setEditing]  = useState(false);
-  const [success,  setSuccess]  = useState(false);
-  const [error,    setError]    = useState("");
+  const [avatar,     setAvatar]     = useState(user.foto_perfil);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [editing,    setEditing]    = useState(false);
+  const [loading,    setLoading]    = useState(false);
+  const [success,    setSuccess]    = useState(false);
+  const [error,      setError]      = useState("");
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -22,12 +24,13 @@ export default function Profile() {
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onloadend = () => setAvatar(reader.result);
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -36,18 +39,43 @@ export default function Profile() {
       return;
     }
 
-    // Aquí iría la llamada al backend real
-    updateUser({ ...user, nombre: form.nombre, foto_perfil: avatar });
-    setSuccess(true);
-    setEditing(false);
-    setForm((prev) => ({ ...prev, passwordAct: "", passwordNew: "" }));
-    showToast("Perfil actualizado correctamente 🎉");
-    setTimeout(() => setSuccess(false), 4000);
-  };
+    setLoading(true);
 
-  const totalDisponibles = MOCK_MOVIES.filter(
-    (m) => m.estado === "Disponible"
-  ).length;
+    try {
+      const formData = new FormData();
+      formData.append("nombre_completo",  form.nombre);
+      formData.append("current_password", form.passwordAct); // ← nombre exacto que espera el backend
+      if (form.passwordNew) {
+        formData.append("new_password", form.passwordNew);
+      }
+      if (avatarFile instanceof File) {
+        formData.append("foto_perfil", avatarFile);
+      }
+
+      const data = await updateProfile(formData);
+
+      updateUser({
+        ...user,
+        nombre:      form.nombre,
+        foto_perfil: data.foto_perfil ?? avatar,
+      });
+
+      setSuccess(true);
+      setEditing(false);
+      setAvatarFile(null);
+      setForm((prev) => ({ ...prev, passwordAct: "", passwordNew: "" }));
+      showToast("Perfil actualizado correctamente 🎉");
+      setTimeout(() => setSuccess(false), 4000);
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error   ||
+        "Error al actualizar el perfil. Intenta de nuevo.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main className="profile-page">
@@ -55,7 +83,6 @@ export default function Profile() {
 
         {/* ── TARJETA HERO ── */}
         <div className="profile-hero-card">
-          {/* Avatar con botón editar foto */}
           <div className="avatar-container">
             <img src={avatar} alt={user.nombre} className="profile-avatar" />
             {editing && (
@@ -80,64 +107,39 @@ export default function Profile() {
                 <span className="stat-num">{playlist.length}</span>
                 <span className="stat-label">En mi lista</span>
               </div>
-              <div className="stat-divider" />
-              <div className="stat-item">
-                <span className="stat-num">{totalDisponibles}</span>
-                <span className="stat-label">Disponibles</span>
-              </div>
-              <div className="stat-divider" />
-              <div className="stat-item">
-                <span className="stat-num">12</span>
-                <span className="stat-label">Total títulos</span>
-              </div>
             </div>
           </div>
 
           {!editing && (
-            <button
-              className="btn-edit-trigger"
-              onClick={() => setEditing(true)}
-            >
+            <button className="btn-edit-trigger" onClick={() => setEditing(true)}>
               ✏️ Editar perfil
             </button>
           )}
         </div>
 
-        {/* ── FORMULARIO EDICIÓN ── */}
+        {/* ── FORMULARIO ── */}
         <div className="profile-form-card">
           <h2 className="form-card-title">
             {editing ? "Editar Información" : "Información de Cuenta"}
           </h2>
 
-          {success && (
-            <div className="success-msg">✅ Cambios guardados correctamente</div>
-          )}
-          {error && (
-            <div className="error-msg">⚠️ {error}</div>
-          )}
+          {success && <div className="success-msg">✅ Cambios guardados correctamente</div>}
+          {error   && <div className="error-msg">⚠️ {error}</div>}
 
           {editing ? (
             <form onSubmit={handleSubmit} className="profile-form" noValidate>
               <div className="profile-form-row">
                 <div className="form-group">
-                  <label className="form-label" htmlFor="nombre">
-                    Nombre completo
-                  </label>
+                  <label className="form-label" htmlFor="nombre">Nombre completo</label>
                   <input
                     id="nombre" name="nombre" type="text"
                     className="form-input"
                     value={form.nombre} onChange={handleChange} required
                   />
                 </div>
-
                 <div className="form-group">
                   <label className="form-label">Correo electrónico</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    value={user.email}
-                    disabled
-                  />
+                  <input type="email" className="form-input" value={user.email} disabled />
                   <small className="form-hint">El correo no se puede modificar</small>
                 </div>
               </div>
@@ -154,11 +156,8 @@ export default function Profile() {
                     value={form.passwordAct} onChange={handleChange}
                   />
                 </div>
-
                 <div className="form-group">
-                  <label className="form-label" htmlFor="passwordNew">
-                    Nueva contraseña
-                  </label>
+                  <label className="form-label" htmlFor="passwordNew">Nueva contraseña</label>
                   <input
                     id="passwordNew" name="passwordNew" type="password"
                     className="form-input"
@@ -169,21 +168,17 @@ export default function Profile() {
               </div>
 
               <div className="form-actions">
-                <button type="submit" className="btn-save">
-                  Guardar Cambios
+                <button type="submit" className="btn-save" disabled={loading}>
+                  {loading ? "Guardando..." : "Guardar Cambios"}
                 </button>
                 <button
-                  type="button"
-                  className="btn-cancel"
+                  type="button" className="btn-cancel"
                   onClick={() => {
                     setEditing(false);
                     setError("");
                     setAvatar(user.foto_perfil);
-                    setForm({
-                      nombre: user.nombre,
-                      passwordAct: "",
-                      passwordNew: "",
-                    });
+                    setAvatarFile(null);
+                    setForm({ nombre: user.nombre, passwordAct: "", passwordNew: "" });
                   }}
                 >
                   Cancelar
@@ -191,7 +186,6 @@ export default function Profile() {
               </div>
             </form>
           ) : (
-            /* Vista solo lectura */
             <div className="profile-readonly">
               <div className="readonly-row">
                 <div className="readonly-field">
