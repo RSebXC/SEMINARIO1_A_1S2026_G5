@@ -9,3 +9,4 @@ router.get("/profile", authRequired, ctrl.me);
 router.put("/profile", authRequired, upload.single("foto_perfil"), ctrl.update);
 
 module.exports = router;
+

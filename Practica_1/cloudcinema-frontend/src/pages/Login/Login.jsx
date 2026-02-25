@@ -1,42 +1,50 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "../../context/AppContext";
-import { MOCK_USER } from "../../data/mockData";
+import { login as loginService } from "../../services/api";
 import "./Login.css";
 
 export default function Login() {
   const { login } = useApp();
-  const navigate   = useNavigate();
+  const navigate  = useNavigate();
 
-  const [form, setForm]     = useState({ email: "", password: "" });
-  const [error, setError]   = useState("");
+  const [form, setForm]       = useState({ email: "", password: "" });
+  const [error, setError]     = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Simula llamada al backend
-    setTimeout(() => {
-  if (
-    (form.email === "rodrigo@cloudcinema.gt" && form.password === "1234") ||
-    (form.email === "sergio@cloudcinema.gt" && form.password === "1234") ||
-    (form.email === "moises@cloudcinema.gt" && form.password === "1234")
-  ) {
-    login(MOCK_USER);
-    navigate("/gallery");
-  } else {
-    setError(
-      "Credenciales incorrectas. Prueba:\n rodrigo@cloudcinema.gt / 1234"
-    );
-    setLoading(false);
-  }
-}, 900);
+    try {
+      const data = await loginService({
+        email:    form.email,
+        password: form.password,
+      });
 
+      // El backend devuelve { token, user: { id_usuario, email, nombre_completo, foto_perfil } }
+      login({
+        id:          data.user.id_usuario,
+        nombre:      data.user.nombre_completo,
+        email:       data.user.email,
+        foto_perfil: data.user.foto_perfil,
+        token:       data.token,
+      });
+
+      navigate("/gallery");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error   ||
+        "Credenciales incorrectas. Verifica tu correo y contraseña.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
