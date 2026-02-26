@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://54.165.29.42:3000/';
+const API_URL = 'http://cloudcinema-clb2-693425506.us-east-1.elb.amazonaws.com';
 
 // URL base pública del bucket de imágenes
 export const S3_IMAGES_BASE = 'https://practica1-images-g5.s3.us-east-1.amazonaws.com';
