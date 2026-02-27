@@ -177,7 +177,7 @@ CloudCinema es una aplicación web de streaming de películas implementada con u
 **Propósito:** Almacenamiento del frontend estático
 
 <div style="text-align:center; margin:16px 0;">
-  <img src="assets/s3-front.png" alt="S3-front" style="max-width:620px; width:100%; height:auto;" />
+  <img src="assets/s3-front.jpeg" alt="S3-front" style="max-width:620px; width:100%; height:auto;" />
 </div>
 
 **Configuración:**
@@ -191,13 +191,13 @@ CloudCinema es una aplicación web de streaming de películas implementada con u
 **Propósito:** Almacenamiento de archivos multimedia (fotos de perfil, pósters)
 
 <div style="text-align:center; margin:16px 0;">
-  <img src="assets/s3-images.png" alt="S3-image" style="max-width:620px; width:100%; height:auto;" />
+  <img src="assets/s3.jpeg" alt="S3-image" style="max-width:620px; width:100%; height:auto;" />
 </div>
 
 **Configuración:**
 - Estructura de carpetas:
-  - `/profile-pictures/`
-  - `/movie-posters/`
+  - `/Fotos_Perfil/`
+  - `/Posters/`
 - CORS configurado para acceso desde el frontend
 - Lifecycle rules para archivos antiguos
 
