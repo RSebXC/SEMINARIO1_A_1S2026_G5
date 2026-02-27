@@ -1,0 +1,128 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useApp } from "../../context/AppContext";
+import { login as loginService } from "../../services/api";
+import "./Login.css";
+
+export default function Login() {
+  const { login } = useApp();
+  const navigate  = useNavigate();
+
+  const [form, setForm]       = useState({ email: "", password: "" });
+  const [error, setError]     = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) =>
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await loginService({
+        email:    form.email,
+        password: form.password,
+      });
+
+      // El backend devuelve { token, user: { id_usuario, email, nombre_completo, foto_perfil } }
+      login({
+        id:          data.user.id_usuario,
+        nombre:      data.user.nombre_completo,
+        email:       data.user.email,
+        foto_perfil: data.user.foto_perfil,
+        token:       data.token,
+      });
+
+      navigate("/gallery");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data?.error   ||
+        "Credenciales incorrectas. Verifica tu correo y contraseña.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-wrap">
+      {/* Panel izquierdo decorativo */}
+      <div className="auth-left">
+        <div className="auth-left-bg" />
+        <div className="auth-left-overlay" />
+        <div className="auth-left-content">
+          <p className="auth-left-eyebrow">Bienvenido de vuelta</p>
+          <h1 className="auth-brand">
+            CLOUD<span>CINEMA</span>
+          </h1>
+          <p className="auth-tagline">
+            Tu plataforma de cine en la nube. Explora, colecciona y disfruta
+            sin interrupciones.
+          </p>
+        </div>
+      </div>
+
+      {/* Panel derecho – formulario */}
+      <div className="auth-right">
+        <div className="auth-box">
+          <h2 className="auth-title">Iniciar Sesión</h2>
+          <p className="auth-subtitle">
+            Accede a tu cuenta para ver tu catálogo
+          </p>
+
+          {error && <div className="error-msg">{error}</div>}
+
+          <form onSubmit={handleSubmit} className="auth-form" noValidate>
+            <div className="form-group">
+              <label className="form-label" htmlFor="email">
+                Correo electrónico
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                className="form-input"
+                placeholder="tu@correo.com"
+                value={form.email}
+                onChange={handleChange}
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="password">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                className="form-input"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={handleChange}
+                required
+                autoComplete="current-password"
+              />
+            </div>
+
+            <button type="submit" className="btn-main" disabled={loading}>
+              {loading ? "Verificando..." : "Iniciar Sesión"}
+            </button>
+          </form>
+
+          <p className="auth-switch">
+            ¿No tienes cuenta?{" "}
+            <button onClick={() => navigate("/register")} className="auth-switch-btn">
+              Regístrate aquí
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

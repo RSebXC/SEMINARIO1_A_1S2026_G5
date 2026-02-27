@@ -1,0 +1,2 @@
+// Validadores opcionales
+module.exports = {};

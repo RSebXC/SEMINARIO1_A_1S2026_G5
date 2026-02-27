@@ -1,0 +1,22 @@
+PORT=3000
+NODE_ENV=production
+
+# Database
+DB_HOST=cloudcinema-db.c05i88gwi4n6.us-east-1.rds.amazonaws.com
+DB_PORT=3306
+DB_USER=admin
+DB_PASSWORD=CloudCinema2026!
+DB_NAME=cloudCinema
+
+# JWT
+JWT_SECRET=seminario_usac_cloudcinema_2026_secret_key
+JWT_EXPIRES_IN=7d
+
+# AWS S3 
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=AKIA4GL5D6OAKLVMPCS2
+AWS_SECRET_ACCESS_KEY=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
+S3_BUCKET_IMAGES=practica1-images-g5
+
+# CORS
+CORS_ORIGIN=*
