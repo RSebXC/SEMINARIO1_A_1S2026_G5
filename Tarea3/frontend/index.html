@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tarea 3 - Azure Serverless</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      color: #38bdf8;
+      margin-bottom: 6px;
+    }
+
+    header p {
+      color: #94a3b8;
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 30px;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: #7dd3fc;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #334155;
+      padding-bottom: 10px;
+    }
+
+    /* Integrantes table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      text-align: left;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      padding: 8px 12px;
+    }
+    td {
+      padding: 10px 12px;
+      font-size: 0.92rem;
+      border-top: 1px solid #334155;
+    }
+    tr:hover td { background: #263145; }
+
+    .badge {
+      background: #0ea5e9;
+      color: white;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* Form */
+    .form-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input[type="text"]:focus { border-color: #38bdf8; }
+    input[type="text"]::placeholder { color: #475569; }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary { background: #0ea5e9; color: white; }
+    .btn-secondary { background: #334155; color: #e2e8f0; }
+
+    /* Response area */
+    #response-box {
+      background: #0f172a;
+      border-radius: 10px;
+      padding: 16px;
+      font-size: 0.85rem;
+      min-height: 60px;
+      color: #94a3b8;
+      white-space: pre-wrap;
+      word-break: break-all;
+      border: 1px solid #334155;
+    }
+
+    .status-ok  { color: #4ade80; }
+    .status-err { color: #f87171; }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    footer {
+      margin-top: 20px;
+      color: #475569;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Tarea 3 — Azure Serverless</h1>
+    <p>Seminario de Sistemas 1 · FIUSAC · 2026</p>
+  </header>
+
+  <!-- Integrantes -->
+  <div class="card">
+    <h2>Integrantes del Grupo</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nombre</th>
+          <th>Carné</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge">1</span></td>
+          <td>Sergio Joel Rodas Velez</td>
+          <td>202200271</td>
+        </tr>
+        <tr>
+          <td><span class="badge">2</span></td>
+          <td>Rodrigo Sebastian Castro Aguilar</td>
+          <td>202204496</td>
+        </tr>
+        <tr>
+          <td><span class="badge">3</span></td>
+          <td>Moisés Iván Daniel Alvarado García</td>
+          <td>202002907</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- API Tester -->
+  <div class="card">
+    <h2>Interacción con la API</h2>
+
+    <div class="form-group">
+      <input type="text" id="nombre-input" placeholder="Escribe un nombre para registrar..." />
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="enviarNombre()">Enviar (POST)</button>
+      <button class="btn btn-secondary" onclick="obtenerRegistros()">Registros (GET)</button>
+    </div>
+
+    <br/>
+    <div id="response-box">La respuesta de la API aparecerá aquí...</div>
+  </div>
+
+  <footer>
+    Universidad San Carlos de Guatemala · Facultad de Ingeniería
+  </footer>
+
+  <script>
+    // IMPORTANTE: Reemplaza esta URL con la URL de tu Azure API Management
+    const API_URL = "https://tarea3-apim.azure-api.net/tarea3-nombres/NombresFunction";
+
+    async function obtenerRegistros() {
+      const box = document.getElementById("response-box");
+      box.className = "";
+      box.textContent = "Consultando registros...";
+      try {
+        const res = await fetch(API_URL, { method: "GET" });
+        const data = await res.json();
+        box.className = "status-ok";
+        box.textContent = "GET exitoso:\n\n" + JSON.stringify(data, null, 2);
+      } catch (err) {
+        box.className = "status-err";
+        box.textContent = "Error al conectar con la API:\n" + err.message;
+      }
+    }
+
+    async function enviarNombre() {
+      const input = document.getElementById("nombre-input");
+      const nombre = input.value.trim();
+      const box = document.getElementById("response-box");
+
+      if (!nombre) {
+        box.className = "status-err";
+        box.textContent = "Por favor escribe un nombre antes de enviar.";
+        return;
+      }
+
+      box.className = "";
+      box.textContent = "Enviando nombre...";
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nombre: nombre })
+        });
+        const data = await res.json();
+        box.className = "status-ok";
+        box.textContent = "POST exitoso:\n\n" + JSON.stringify(data, null, 2);
+        input.value = "";
+      } catch (err) {
+        box.className = "status-err";
+        box.textContent = "Error al conectar con la API:\n" + err.message;
+      }
+    }
+  </script>
+
+</body>
+</html>
