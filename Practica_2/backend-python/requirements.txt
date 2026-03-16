@@ -1,0 +1,8 @@
+fastapi[standard]
+sqlmodel
+mysql-connector-python
+python-multipart
+pyjwt
+bcrypt
+python-dotenv
+pydantic-settings
