@@ -1,3 +1,3 @@
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-// The Serverless URL will go here when ready. For now it triggers our simulated mock:
-export const SERVERLESS_URL = import.meta.env.VITE_SERVERLESS_URL || "MOCK";
+export const API_URL = import.meta.env.VITE_API_URL;
+export const SERVERLESS_IMAGE_URL = import.meta.env.VITE_SERVERLESS_IMAGE_URL;
+export const SERVERLESS_DOC_URL = import.meta.env.VITE_SERVERLESS_DOC_URL;

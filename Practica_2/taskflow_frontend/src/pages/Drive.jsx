@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
-import { API_URL, SERVERLESS_URL } from '../utils/config';
+import { API_URL, SERVERLESS_IMAGE_URL, SERVERLESS_DOC_URL } from '../utils/config';
 import Navbar from '../components/layout/Navbar';
 import { UploadCloud, File as FileIcon, Image as ImageIcon, Video, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -40,29 +40,32 @@ export default function Drive() {
     try {
       let finalUrl = "";
 
-      // PASO 1: FLUJO SERVERLESS (Simulado o Real)
-      if (SERVERLESS_URL === "MOCK") {
-        // Simulamos el retraso de 2 segundos que tomaría subir S3 / Blob Storage
-        await new Promise(resolve => setTimeout(resolve, 2000));
+      // PASO 1: FLUJO SERVERLESS
+      const toBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+      });
 
-        // Generar una URL falsa dependiendo del tipo de archivo para efectos visuales
-        if (file.type.startsWith('image/')) {
-          finalUrl = `https://picsum.photos/seed/${Math.random()}/800/600`;
-        } else if (file.type.startsWith('video/')) {
-          finalUrl = "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
-        } else {
-          finalUrl = "https://pdfobject.com/pdf/sample-3pp.pdf"; // URL dummy público que permite iframes
-        }
-      } else {
-        // TODO: Acá iría el fetch real hacia la función Lambda / Azure enviando el formData
-        /*
-        const formData = new FormData();
-        formData.append('file', file);
-        const serverlessRes = await fetch(SERVERLESS_URL, { method: 'POST', body: formData });
-        const serverlessData = await serverlessRes.json();
-        finalUrl = serverlessData.file_url;
-        */
-      }
+      const fileContent = await toBase64(file);
+
+      // Elegir Lambda según tipo de archivo
+      const isImage = file.type.startsWith('image/');
+      const lambdaUrl = isImage ? SERVERLESS_IMAGE_URL : SERVERLESS_DOC_URL;
+
+      const serverlessRes = await fetch(lambdaUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileContent: fileContent,
+          contentType: file.type
+        })
+      });
+
+      const serverlessData = await serverlessRes.json();
+      finalUrl = serverlessData.file_url;
 
       toast.loading('Registrando archivo en Base de Datos...', { id: toastId });
 

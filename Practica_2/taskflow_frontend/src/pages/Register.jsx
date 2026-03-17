@@ -2,18 +2,18 @@ import { useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useFetch } from '../hooks/useFetch';
 import { toast } from 'sonner';
-import { API_URL, SERVERLESS_URL } from '../utils/config';
+import { API_URL, SERVERLESS_IMAGE_URL } from '../utils/config';
 import { UploadCloud } from 'lucide-react';
 
 export default function Register() {
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [profileImage, setProfileImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
-  const { execute, loading } = useFetch('', { 
+  const { execute, loading } = useFetch('', {
     manual: true,
     requiresAuth: false
   });
@@ -42,36 +42,42 @@ export default function Register() {
       // PASO 1: Subir imagen si existe utilizando el flujo Serverless
       if (profileImage) {
         toast.loading('Subiendo imagen de perfil a la nube...', { id: toastId });
-        
-        if (SERVERLESS_URL === "MOCK") {
-          // Simulamos el retraso de subida al Bucket / Blob Storage
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          finalProfileUrl = `https://picsum.photos/seed/${formData.username}/200/200`;
-        } else {
-          // TODO: Fetch real hacia Lambda / Azure (Listos para cuando integren!)
-          /*
-          const imgData = new FormData();
-          imgData.append('file', profileImage);
-          const serverlessRes = await fetch(SERVERLESS_URL, { method: 'POST', body: imgData });
-          const resJson = await serverlessRes.json();
-          finalProfileUrl = resJson.file_url;
-          */
-        }
+
+        const toBase64 = (file) => new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+        });
+
+        const fileContent = await toBase64(profileImage);
+
+        const serverlessRes = await fetch(SERVERLESS_IMAGE_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            fileName: profileImage.name,
+            fileContent: fileContent,
+            contentType: profileImage.type
+          })
+        });
+
+        const resJson = await serverlessRes.json();
+        finalProfileUrl = resJson.file_url;
       }
 
-      // PASO 2: Registrar usuario en nuestro backend MySQL enviándole la URL final
       toast.loading('Creando cuenta en la base de datos...', { id: toastId });
-      
+
       const payload = {
         ...formData,
         profile_picture_url: finalProfileUrl || null
       };
 
-      await execute(payload, { 
-        url: `${API_URL}/auth/register`, 
-        method: 'POST' 
+      await execute(payload, {
+        url: `${API_URL}/auth/register`,
+        method: 'POST'
       });
-      
+
       toast.success('Cuenta creada! Ahora debés iniciar sesión.', { id: toastId });
       navigate('/login');
     } catch (err) {
@@ -117,10 +123,10 @@ export default function Register() {
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
-          
+
           <div className="pt-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">Foto de Perfil (Opcional)</label>
-            <div 
+            <div
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors"
             >
@@ -129,12 +135,12 @@ export default function Register() {
                 {profileImage ? profileImage.name : "Subir imagen desde equipo"}
               </span>
               <p className="text-xs text-gray-400 mt-1">Sube directo a S3/Blob Serverless</p>
-              <input 
-                type="file" 
+              <input
+                type="file"
                 ref={fileInputRef}
                 accept="image/*"
                 onChange={handleImageChange}
-                className="hidden" 
+                className="hidden"
               />
             </div>
           </div>
