@@ -21,9 +21,9 @@ contenido = buffer.getvalue()
 print(f"Peso final: {round(len(contenido)/1024/1024, 2)} MB")
 
 if len(contenido) > 5 * 1024 * 1024:
-    print("⚠ Aún muy grande, reduce más el quality o tamaño")
+    print("Aún muy grande, reduce más el quality o tamaño")
 else:
-    print("✓ Tamaño OK para Rekognition")
+    print("Tamaño OK para Rekognition")
 
 encoded = base64.b64encode(contenido).decode('utf-8')
 payload = {"imagen_base64": encoded}
