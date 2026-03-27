@@ -123,7 +123,7 @@ En esta ilustración se expone la configuración en Amazon API Gateway, servicio
 # Documentación Azure
 
 
-#### NSG: `vm-node` y vm-python`
+#### NSG: `vm-node` y `vm-python`
 
 
 | Prioridad | Nombre | Puerto | Protocolo | Origen | Destino | Acción | Descripción |
