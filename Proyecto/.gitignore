@@ -1,0 +1,11 @@
+# Credenciales - NUNCA subir al repo
+.env
+backend-node/.env
+backend-python/src/.env
+backend-python/.env
+
+# Dependencias
+node_modules/
+venv/
+__pycache__/
+*.pyc

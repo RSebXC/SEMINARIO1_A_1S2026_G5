@@ -1,0 +1,17 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { testConnection } = require('./config/db');
+const app = express();
+app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
+app.use(express.json({ limit:'10mb' }));
+app.use(express.urlencoded({ extended:true, limit:'10mb' }));
+app.get('/health', (req,res) => res.json({ status:'ok', instancia:'nodejs', timestamp:new Date().toISOString() }));
+app.use('/auth',          require('./routes/auth.routes'));
+app.use('/publicaciones', require('./routes/publicaciones.routes'));
+app.use('/chatbot',       require('./routes/chatbot.routes'));
+app.use('/usuarios', require('./routes/usuarios.routes'));
+app.use('/mensajes', require('./routes/mensajes.routes'));
+app.use('/perfil',        require('./routes/perfil.routes'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, async () => { console.log(`🚀 Node.js en puerto ${PORT}`); await testConnection(); });
