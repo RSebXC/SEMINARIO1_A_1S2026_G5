@@ -53,7 +53,7 @@ Semi-Social es una aplicación web tipo red social desplegada completamente en A
 
 ### Diagrama general
 
-![Diagrama de arquitectura](./docs/arquitectura.png)
+![Diagrama de arquitectura](./assets/Arquitectura.drawio.svg)
 
 ### Flujo de la aplicación
 
@@ -113,13 +113,25 @@ Los roles son utilizados por los recursos que ejecutan código, eliminando la ne
 | `EC2-Semi1-Role` | EC2 | `AmazonS3FullAccess`, `AmazonRekognitionReadOnlyAccess`, `TranslateReadOnly`, `AmazonCognitoPowerUser`, `AmazonRDSDataFullAccess` | Asignado a ambas EC2 para acceso a servicios AWS sin access keys |
 | `Lambda-Semi1-Role` | Lambda | `AWSLambdaBasicExecutionRole`, `AmazonS3FullAccess`, `AmazonRekognitionFullAccess` | Asignado a funciones Lambda para procesar imágenes |
 
-### Capturas
+### Usuarios creados en IAM
 
-![Usuarios IAM](./docs/capturas/01-iam/usuarios.png)
+![Usuarios IAM](./assets/usuarios.png)
 
-![Roles IAM](./docs/capturas/01-iam/roles.png)
+### Roles IAM
 
-![Política del rol EC2](./docs/capturas/01-iam/ec2-role-politicas.png)
+![Roles IAM](./assets/roles.png)
+
+### Politica del rol EC2
+
+![Política del rol EC2](./assets/politicas_ec2.png)
+
+### Politica del rol Lambda
+
+![Política del rol Lambda](./assets/politicas_lambda.png)
+
+### Politica del rol APIGateway
+
+![Política del rol APIGateway](./assets/politicas_api.png)
 
 ---
 
@@ -143,7 +155,7 @@ Se configuraron 3 Security Groups que implementan el principio de acceso mínimo
 | SSH | 22 | IP Persona 3 /32 | Administración remota |
 | Custom TCP | 3000 | `sg-semi1-elb` | Backend accesible solo desde el ALB |
 
-> El uso del SG del ALB como origen garantiza que las EC2 nunca sean accesibles directamente desde internet en el puerto del backend.
+
 
 ### `sg-semi1-rds` — Base de Datos
 
@@ -152,9 +164,9 @@ Se configuraron 3 Security Groups que implementan el principio de acceso mínimo
 | MySQL/Aurora | 3306 | `sg-semi1-ec2` | Acceso desde ambas EC2 backend |
 | MySQL/Aurora | 3306 | IPs del equipo /32 | Administración directa para debugging |
 
-### Captura
+### Grupos de Seguridad
 
-![Security Groups](./docs/capturas/01-iam/security-groups.png)
+![Grupos de Seguridad](./assets/seguridad.png)
 
 ---
 
@@ -166,10 +178,8 @@ Bucket destinado al almacenamiento de imágenes de publicaciones y fotos de perf
 
 ```
 semi1-proyecto-g5-2026/
-├── Fotos_Perfil/
-│   └── [uuid][timestamp].jpg
+├── Fotos_Perfil/   
 └── Fotos_Publicadas/
-    └── [uuid][timestamp].jpg
 ```
 
 - **Política de acceso**: lectura pública (`s3:GetObject`) para todos los objetos; la escritura está restringida mediante la función Lambda
@@ -184,15 +194,13 @@ semi1-proyecto-g5-2026/
 | Error document | `index.html` (soporte para rutas SPA) |
 | Endpoint público | `http://semi1-proyecto-web-g5.s3-website-us-east-1.amazonaws.com/` |
 
-### Capturas
+### Bucket de imágenes
+![Bucket de imágenes](./assets/bucket_imagenes.png)
 
-![Bucket de imágenes](./docs/capturas/02-s3/bucket-imagenes.png)
 
-![Carpetas del bucket](./docs/capturas/02-s3/bucket-carpetas.png)
+### Bucket del sitio web
+![Bucket del sitio web](./assets/bucket_web.png)
 
-![Bucket del sitio web](./docs/capturas/02-s3/bucket-web.png)
-
-![Configuración de static website hosting](./docs/capturas/02-s3/static-hosting.png)
 
 ---
 
@@ -238,13 +246,10 @@ La base de datos cuenta con 8 tablas relacionales. Las contraseñas se almacenan
 
 El script completo del schema está en [`Proyecto/schema.sql`](./Proyecto/schema.sql).
 
-### Capturas
+### Instancia RDS
 
-![Instancia RDS](./docs/capturas/03-rds/instancia.png)
+![Instancia RDS](./assets/instanciaDB.png)
 
-![Conexión desde Workbench](./docs/capturas/03-rds/workbench-conexion.png)
-
-![Tablas creadas](./docs/capturas/03-rds/tablas.png)
 
 ---
 
@@ -268,7 +273,7 @@ Se configuraron 2 instancias EC2 idénticas en zonas de disponibilidad distintas
 | `semi1-g5-backend-1` | `us-east-1a` | `54.87.178.132` |
 | `semi1-g5-backend-2` | `us-east-1b` | `54.90.146.54` |
 
-Ambas instancias tienen preinstalado mediante script de user-data: Node.js 20 LTS + npm + PM2, Python 3 + pip + gunicorn + boto3 + flask + pymysql + flask-cors, mysql-client, git y build tools. El backend se ejecuta en el puerto **3000**.
+
 
 ### Application Load Balancer
 
@@ -282,23 +287,25 @@ Ambas instancias tienen preinstalado mediante script de user-data: Node.js 20 LT
 | Health check | `GET /health` → 200 OK |
 | DNS público | `semi1-g5-alb-473829343.us-east-1.elb.amazonaws.com` |
 
-El ALB distribuye el tráfico mediante round-robin. Los health checks garantizan que, si una EC2 falla, el tráfico se redirige automáticamente a la otra sin interrupción para el usuario.
 
-### Prueba de alta disponibilidad
 
-Se verificó el comportamiento del balanceador deteniendo una EC2 manualmente. El ALB detectó la caída en menos de 30 segundos y redirigió el 100% del tráfico a la instancia restante, manteniendo el servicio activo.
 
-### Capturas
+### Instancia 1 EC2
 
-![Instancias EC2](./docs/capturas/04-ec2/instancias.png)
+![Instancia 1 EC2](./assets/ec2_1.png)
 
-![IAM Role de las EC2](./docs/capturas/04-ec2/iam-role.png)
+### Instancia 2 EC2
 
-![Application Load Balancer](./docs/capturas/05-alb/alb.png)
+![Instancia 2 EC2](./assets/ec2_2.png)
 
-![Target Group con ambas EC2 saludables](./docs/capturas/05-alb/target-group.png)
+### Application Load Balancer
 
-![Prueba de balanceo alternado](./docs/capturas/05-alb/balanceo.png)
+![Application Load Balancer](./assets/balanceador.png)
+
+
+### Grupos Destino
+
+![Grupos Destino](./assets/grupo_destino.png)
 
 ---
 
@@ -315,7 +322,7 @@ Se verificó el comportamiento del balanceador deteniendo una EC2 manualmente. E
 
 Cada usuario registrado se sincroniza con la tabla `usuarios` de RDS mediante el campo `cognito_sub`, que actúa como llave foránea.
 
-![Cognito User Pool](./docs/capturas/06-cognito/userpool.png)
+![Cognito User Pool](./assets/cognito.png)
 
 ### Amazon Rekognition
 
@@ -335,9 +342,13 @@ Frontend → API Gateway (POST /upload) → Lambda (semi1-upload-handler) → S3
 | **Lambda** `semi1-upload-handler` | Python 3.11 · Rol: `Lambda-Semi1-Role` · Recibe imagen en base64, decodifica y sube a S3 · Retorna URL pública del objeto |
 | **API Gateway** `semi1-api` | Endpoint: `POST /upload` · CORS habilitado · Integración Lambda proxy |
 
-![Lambda](./docs/capturas/07-lambda/funcion.png)
+### Amazon Lambda
 
-![API Gateway](./docs/capturas/08-apigateway/api.png)
+![Lambda](./assets/lambda.png)
+
+### API Gateway
+
+![API Gateway](./assets/api.png)
 
 ### Amazon Translate
 
@@ -347,18 +358,37 @@ Integrado en el backend para traducir descripciones de publicaciones y comentari
 
 Chatbot configurado con intents para responder preguntas frecuentes sobre la facultad (horarios, ubicación, servicios). Se integra al frontend mediante un botón flotante.
 
-![Amazon Lex](./docs/capturas/09-lex/bot.png)
+![Amazon Lex](./assets/lex.png)
 
 ---
 
-## Sitio Web (Frontend)
+## Sitio Web 
 
 El frontend está alojado como sitio web estático en el bucket `semi1-proyecto-web-g5`.
 
 | Campo | Valor |
 |---|---|
 | URL pública | `http://semi1-proyecto-web-g5.s3-website-us-east-1.amazonaws.com/` |
-| Framework | [especificar] |
-| Conexión al backend | URL del ALB (`semi1-g5-alb-473829343.us-east-1.elb.amazonaws.com`) |
+| Conexión al backend | `semi1-g5-alb-473829343.us-east-1.elb.amazonaws.com` |
 
-![Aplicación Web](./docs/capturas/02-s3/web-app.png)
+
+### Inicio de Sesion
+![Aplicación Web](./assets/front.png)
+
+### Crear Cuenta
+![Aplicación Web](./assets/registro.png)
+
+### Mi Perfil
+![Aplicación Web](./assets/editar.png)
+
+### Inicio y Publicaciones
+![Aplicación Web](./assets/publicaciones.png)
+
+### Personas y Amigos
+![Aplicación Web](./assets/amigos.png)
+
+### Chat
+![Aplicación Web](./assets/chat.png)
+
+### ChatBot
+![Aplicación Web](./assets/chatbot.png)
